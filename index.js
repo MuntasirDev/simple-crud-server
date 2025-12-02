@@ -5,11 +5,9 @@ const cors = require('cors');
 const app = express();
 const port = 1000;
 
-// middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
 const uri = "mongodb+srv://user_Db:1nSpVQUc5DB5IzKL@simple-crud-server.a0arf8b.mongodb.net/?appName=simple-crud-server";
 
 const client = new MongoClient(uri, {
@@ -23,8 +21,8 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
-    const database = client.db('usersdb'); // using only one DB
-    const usersCollection = database.collection('users');
+    const db = client.db('usersdb');
+    const usersCollection = db.collection('users');
 
     // GET all users
     app.get('/users', async (req, res) => {
@@ -32,24 +30,48 @@ async function run() {
       res.send(users);
     });
 
-    // POST a new user
+    // GET single user
+    app.get('/users/:id', async (req, res) => {
+      const id = req.params.id;
+      const user = await usersCollection.findOne({ _id: new ObjectId(id) });
+      res.send(user);
+    });
+
+    // POST new user
     app.post('/users', async (req, res) => {
       const newUser = req.body;
       const result = await usersCollection.insertOne(newUser);
       res.send(result);
     });
 
-    // DELETE a user
-    app.delete('/users/:id', async (req, res) => {  // added async
+
+    //update
+
+    app.put ('/users/:id', async(req,res)=>{
+        const id = req.params.id;
+        const filter = {_id : new ObjectId(id)}
+        const user = req.body;
+        const upadateDoc = {
+            $set: {
+                name: user.name,
+                email: user.email
+            }
+        }
+        cosnoloe.log(user);
+        const result = await usersCollection.updateOne(filter,upadateDoc,options);
+
+    })
+
+    // DELETE user
+    app.delete('/users/:id', async (req, res) => {
       const id = req.params.id;
       const result = await usersCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
 
-    await client.db('admin').command({ ping: 1 });
-    console.log("Pinged your deployment. Connected to MongoDB!");
+    console.log("MongoDB Connected!");
   } catch (err) {
-    console.error(err);
+    console.log(err);
   }
 }
 
